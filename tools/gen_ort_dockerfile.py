@@ -165,7 +165,10 @@ RUN _CUDNN_VERSION=$(echo $CUDNN_VERSION | cut -d. -f1-2) && \
     mkdir -p /usr/local/cudnn-$_CUDNN_VERSION/cuda/include && \
     ln -s /usr/include/cudnn.h /usr/local/cudnn-$_CUDNN_VERSION/cuda/include/cudnn.h && \
     mkdir -p /usr/local/cudnn-$_CUDNN_VERSION/cuda/lib64 && \
-    ln -s /etc/alternatives/libcudnn_so /usr/local/cudnn-$_CUDNN_VERSION/cuda/lib64/libcudnn.so
+    ln -s /etc/alternatives/libcudnn_so /usr/local/cudnn-$_CUDNN_VERSION/cuda/lib64/libcudnn.so && \
+    echo "export CUDNN_HOME=/usr/local/cudnn-$_CUDNN_VERSION/cuda" >> /etc/profile.d/cudnn.sh
+
+ENV CUDNN_HOME=/usr/local/cudnn-$(echo $CUDNN_VERSION | cut -d. -f1-2)/cuda
 """
 
     if FLAGS.ort_openvino is not None:
@@ -262,6 +265,9 @@ RUN git clone -b rel-${ONNXRUNTIME_VERSION} --recursive ${ONNXRUNTIME_REPO} onnx
             ep_flags += ' --cudnn_home "{}"'.format(FLAGS.cudnn_home)
         elif target_platform() == "igpu":
             ep_flags += ' --cudnn_home "/usr/lib/aarch64-linux-gnu"'
+        else:
+            # For regular Linux builds, reference the CUDNN_HOME env var set in the Dockerfile
+            ep_flags += ' --cudnn_home "$CUDNN_HOME"'
         if FLAGS.ort_tensorrt:
             ep_flags += " --use_tensorrt"
             if FLAGS.ort_version >= "1.12.1":
