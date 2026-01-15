@@ -306,8 +306,10 @@ RUN git clone -b rel-${ONNXRUNTIME_VERSION} --recursive ${ONNXRUNTIME_REPO} onnx
     )
 
     df += """
-RUN ./build.sh ${{COMMON_BUILD_ARGS}} --update --build {}
-""".format(
+    RUN ./build.sh ${{COMMON_BUILD_ARGS}} \
+        --compile_no_warning_as_error \
+        --update --build {}
+    """.format(
         ep_flags
     )
 
