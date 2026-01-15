@@ -57,7 +57,7 @@ project(tritononnxruntimebackend LANGUAGES C CXX)
 #         TRITON_BUILD_CUDA_VERSION=11.1
 #         TRITON_BUILD_CUDA_HOME="C:\Program Files\NVIDIA GPU Computing Toolkit\v11.1"
 #
-    ${Eigen3_INCLUDE_DIRS}
+#   - If you want TensorRT support set
 #     TRITON_ENABLE_ONNXRUNTIME_TENSORRT=ON and set TRITON_BUILD_TENSORRT_HOME.
 #
 #     Optionally set TRITON_ONNX_TENSORRT_REPO_TAG to specify a branch in https://github.com/onnx/onnx-tensorrt repo
@@ -169,15 +169,27 @@ else()
     set(OV_LIBRARY "libopenvino.so")
   endif() # TRITON_ENABLE_ONNXRUNTIME_OPENVINO
 endif()
-
 #
 # Dependencies
 #
-# FetchContent's composability isn't very good. We must include the
-# transitive closure of all repos so that we can override the tag.
-#
 include(FetchContent)
 
+# -----------------------------
+# Eigen3 support (FIXED)
+# -----------------------------
+set(EIGEN3_DIR "" CACHE PATH "Path to Eigen3 installation (for manual override)")
+
+if (NOT EIGEN3_DIR STREQUAL "")
+  find_package(Eigen3 REQUIRED PATHS ${EIGEN3_DIR})
+else()
+  find_package(Eigen3 REQUIRED)
+endif()
+
+message(STATUS "Using Eigen3")
+
+# -----------------------------
+# Fetch Triton deps
+# -----------------------------
 FetchContent_Declare(
   repo-common
   GIT_REPOSITORY ${TRITON_REPO_ORGANIZATION}/common.git
@@ -201,14 +213,18 @@ FetchContent_MakeAvailable(repo-common repo-core repo-backend)
 #
 # CUDA
 #
-if(${TRITON_ENABLE_GPU})
+if (TRITON_ENABLE_GPU)
   find_package(CUDAToolkit REQUIRED)
-endif() # TRITON_ENABLE_GPU
+endif()
 
 #
 # Shared library implementing the Triton Backend API
 #
-configure_file(src/libtriton_onnxruntime.ldscript libtriton_onnxruntime.ldscript COPYONLY)
+configure_file(
+  src/libtriton_onnxruntime.ldscript
+  libtriton_onnxruntime.ldscript
+  COPYONLY
+)
 
 add_library(
   triton-onnxruntime-backend SHARED
@@ -220,36 +236,34 @@ add_library(
 )
 
 add_library(
-  TritonOnnxRuntimeBackend::triton-onnxruntime-backend ALIAS triton-onnxruntime-backend
+  TritonOnnxRuntimeBackend::triton-onnxruntime-backend
+  ALIAS triton-onnxruntime-backend
 )
 
 target_include_directories(
   triton-onnxruntime-backend
-    # Eigen3 support
-    set(EIGEN3_DIR "" CACHE PATH "Path to Eigen3 installation (for manual override)")
-    find_package(Eigen3 QUIET)
-    if(Eigen3_FOUND)
-      message(STATUS "Found Eigen3: ${Eigen3_DIR}")
-    else()
-      if(NOT EIGEN3_DIR STREQUAL "")
-        find_package(Eigen3 REQUIRED PATHS ${EIGEN3_DIR})
-        message(STATUS "Found Eigen3 via manual path: ${EIGEN3_DIR}")
-      else()
-        message(WARNING "Eigen3 not found. Set EIGEN3_DIR to specify manually.")
-      endif()
-    endif()
   PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
     ${TRITON_ONNXRUNTIME_INCLUDE_PATHS}
 )
 
-target_compile_features(triton-onnxruntime-backend PRIVATE cxx_std_${TRITON_MIN_CXX_STANDARD})
-    $<TARGET_PROPERTY:Eigen3::Eigen,INTERFACE_INCLUDE_DIRECTORIES>
+target_link_libraries(
+  triton-onnxruntime-backend
+  PRIVATE
+    Eigen3::Eigen
+)
+
+target_compile_features(
+  triton-onnxruntime-backend
+  PRIVATE cxx_std_${TRITON_MIN_CXX_STANDARD}
+)
+
 target_compile_options(
   triton-onnxruntime-backend PRIVATE
   $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>,$<CXX_COMPILER_ID:GNU>>:
     -Wall -Wextra -Wno-unused-parameter -Wno-type-limits -Werror>
-  $<$<CXX_COMPILER_ID:MSVC>:/Wall /D_WIN32_WINNT=0x0A00 /EHsc /Zc:preprocessor>
+  $<$<CXX_COMPILER_ID:MSVC>:
+    /Wall /D_WIN32_WINNT=0x0A00 /EHsc /Zc:preprocessor>
 )
 
 if(${TRITON_ENABLE_GPU})
