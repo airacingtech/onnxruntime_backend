@@ -290,19 +290,12 @@ RUN git clone -b rel-${ONNXRUNTIME_VERSION} --recursive ${ONNXRUNTIME_REPO} onnx
     else:
         cuda_archs = "60;61;70;75;80;86;90"
 
-    df += """
-WORKDIR /workspace/onnxruntime
+    df += """WORKDIR /workspace/onnxruntime
 ARG COMMON_BUILD_ARGS="--config ${{ONNXRUNTIME_BUILD_CONFIG}} --skip_submodule_sync --parallel --build_shared_lib \
     --build_dir /workspace/build --cmake_extra_defines CMAKE_CUDA_ARCHITECTURES='{}' "
 """.format(
         cuda_archs
     )
-
-RUN ./build.sh ${{COMMON_BUILD_ARGS}} --update --build {}
-""".format(
-    # Always add --allow_running_as_root for Docker builds
-    if '--allow_running_as_root' not in ep_flags:
-        ep_flags += ' --allow_running_as_root'
     df += """
 RUN ./build.sh ${{COMMON_BUILD_ARGS}} --update --build {}
 """.format(
