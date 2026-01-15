@@ -307,7 +307,7 @@ RUN git clone -b rel-${ONNXRUNTIME_VERSION} --recursive ${ONNXRUNTIME_REPO} onnx
 
     df += """
     RUN ./build.sh ${{COMMON_BUILD_ARGS}} \
-        --compile_no_warning_as_error \
+        --cmake_extra_defines onnxruntime_DISABLE_WERROR=ON \
         --update --build {}
     """.format(
         ep_flags
