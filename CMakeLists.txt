@@ -57,7 +57,7 @@ project(tritononnxruntimebackend LANGUAGES C CXX)
 #         TRITON_BUILD_CUDA_VERSION=11.1
 #         TRITON_BUILD_CUDA_HOME="C:\Program Files\NVIDIA GPU Computing Toolkit\v11.1"
 #
-#   - If you want TensorRT support set
+    ${Eigen3_INCLUDE_DIRS}
 #     TRITON_ENABLE_ONNXRUNTIME_TENSORRT=ON and set TRITON_BUILD_TENSORRT_HOME.
 #
 #     Optionally set TRITON_ONNX_TENSORRT_REPO_TAG to specify a branch in https://github.com/onnx/onnx-tensorrt repo
