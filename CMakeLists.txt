@@ -225,12 +225,26 @@ add_library(
 
 target_include_directories(
   triton-onnxruntime-backend
+    # Eigen3 support
+    set(EIGEN3_DIR "" CACHE PATH "Path to Eigen3 installation (for manual override)")
+    find_package(Eigen3 QUIET)
+    if(Eigen3_FOUND)
+      message(STATUS "Found Eigen3: ${Eigen3_DIR}")
+    else()
+      if(NOT EIGEN3_DIR STREQUAL "")
+        find_package(Eigen3 REQUIRED PATHS ${EIGEN3_DIR})
+        message(STATUS "Found Eigen3 via manual path: ${EIGEN3_DIR}")
+      else()
+        message(WARNING "Eigen3 not found. Set EIGEN3_DIR to specify manually.")
+      endif()
+    endif()
   PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
     ${TRITON_ONNXRUNTIME_INCLUDE_PATHS}
 )
 
 target_compile_features(triton-onnxruntime-backend PRIVATE cxx_std_${TRITON_MIN_CXX_STANDARD})
+    $<TARGET_PROPERTY:Eigen3::Eigen,INTERFACE_INCLUDE_DIRECTORIES>
 target_compile_options(
   triton-onnxruntime-backend PRIVATE
   $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>,$<CXX_COMPILER_ID:GNU>>:
