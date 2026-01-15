@@ -293,7 +293,7 @@ RUN git clone -b rel-${ONNXRUNTIME_VERSION} --recursive ${ONNXRUNTIME_REPO} onnx
 
     df += """WORKDIR /workspace/onnxruntime
     ARG COMMON_BUILD_ARGS="\
-    --config ${ONNXRUNTIME_BUILD_CONFIG} \
+    --config ${{ONNXRUNTIME_BUILD_CONFIG}} \
     --skip_submodule_sync \
     --parallel \
     --build_shared_lib \
@@ -301,7 +301,6 @@ RUN git clone -b rel-${ONNXRUNTIME_VERSION} --recursive ${ONNXRUNTIME_REPO} onnx
     --cmake_extra_defines CMAKE_CUDA_ARCHITECTURES=60;61;70;75;80;86;90 \
     --cmake_extra_defines onnxruntime_USE_PREINSTALLED_EIGEN=ON \
     --cmake_extra_defines eigen_path=/usr/include/eigen3"
-
     """.format(
         cuda_archs
     )
