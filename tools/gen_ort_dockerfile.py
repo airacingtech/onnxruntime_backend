@@ -274,9 +274,10 @@ RUN git clone -b rel-${ONNXRUNTIME_VERSION} --recursive ${ONNXRUNTIME_REPO} onnx
             if FLAGS.tensorrt_home is not None:
                 ep_flags += ' --tensorrt_home "{}"'.format(FLAGS.tensorrt_home)
 
-    if os.name == "posix":
-        if os.getuid() == 0:
-            ep_flags += " --allow_running_as_root"
+
+    # Always add --allow_running_as_root for Docker builds
+    if '--allow_running_as_root' not in ep_flags:
+        ep_flags += ' --allow_running_as_root'
 
     if FLAGS.ort_openvino is not None:
         ep_flags += " --use_openvino CPU"
