@@ -298,7 +298,6 @@ RUN git clone -b rel-${ONNXRUNTIME_VERSION} --recursive ${ONNXRUNTIME_REPO} onnx
     --parallel \
     --build_shared_lib \
     --build_dir /workspace/build \
-    --cmake_extra_defines CMAKE_CUDA_ARCHITECTURES=75;80;86;90 \
     --cmake_extra_defines onnxruntime_USE_PREINSTALLED_EIGEN=ON \
     --cmake_extra_defines eigen_path=/usr/include/eigen3"
     """.format(
@@ -596,7 +595,7 @@ def preprocess_gpu_flags():
             print("error: linux build requires --cudnn-home and --cuda-home")
 
         if FLAGS.tensorrt_home is None:
-            FLAGS.tensorrt_home = "/usr/src/tensorrt"
+            FLAGS.tensorrt_home = "/usr"
 
 
 if __name__ == "__main__":
