@@ -138,6 +138,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         curl \
         libcurl4-openssl-dev \
         libssl-dev \
+        libeigen3-dev \
         patchelf \
         python3-dev \
         python3-pip \
@@ -295,7 +296,7 @@ RUN git clone -b rel-${ONNXRUNTIME_VERSION} --recursive ${ONNXRUNTIME_REPO} onnx
     df += """
 WORKDIR /workspace/onnxruntime
 ARG COMMON_BUILD_ARGS="--config ${{ONNXRUNTIME_BUILD_CONFIG}} --skip_submodule_sync --parallel --build_shared_lib \
-    --build_dir /workspace/build --cmake_extra_defines CMAKE_CUDA_ARCHITECTURES='{}' "
+    --build_dir /workspace/build --cmake_extra_defines CMAKE_CUDA_ARCHITECTURES='{}' onnxruntime_USE_SYSTEM_EIGEN=ON Eigen3_DIR=/usr/lib/cmake/eigen3"
 """.format(
         cuda_archs
     )
