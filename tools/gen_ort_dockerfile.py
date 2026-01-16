@@ -298,7 +298,7 @@ RUN git clone -b rel-${ONNXRUNTIME_VERSION} --recursive ${ONNXRUNTIME_REPO} onnx
     --parallel \
     --build_shared_lib \
     --build_dir /workspace/build \
-    --cmake_extra_defines CMAKE_CUDA_ARCHITECTURES=60;61;70;75;80;86;90 \
+    --cmake_extra_defines CMAKE_CUDA_ARCHITECTURES=75;80;86;90 \
     --cmake_extra_defines onnxruntime_USE_PREINSTALLED_EIGEN=ON \
     --cmake_extra_defines eigen_path=/usr/include/eigen3"
     """.format(
@@ -306,9 +306,16 @@ RUN git clone -b rel-${ONNXRUNTIME_VERSION} --recursive ${ONNXRUNTIME_REPO} onnx
     )
 
     df += """
-    RUN ./build.sh ${{COMMON_BUILD_ARGS}} \
-        --cmake_extra_defines onnxruntime_DISABLE_WERROR=ON \
-        --update --build {}
+    RUN ./build.sh ${COMMON_BUILD_ARGS} \
+    --cmake_extra_defines onnxruntime_DISABLE_WERROR=ON \
+    --cmake_extra_defines CMAKE_CUDA_ARCHITECTURES=75;80;86 \
+    --update --build \
+    --use_cuda \
+    --use_tensorrt \
+    --cuda_home /usr/local/cuda \
+    --cudnn_home /usr/lib/x86_64-linux-gnu \
+    --tensorrt_home /usr \
+    --allow_running_as_root
     """.format(
         ep_flags
     )
@@ -494,7 +501,7 @@ RUN git clone -b rel-%ONNXRUNTIME_VERSION% --recursive %ONNXRUNTIME_REPO% onnxru
 WORKDIR /workspace/onnxruntime
 ARG VS_DEVCMD_BAT="\BuildTools\VC\Auxiliary\Build\vcvars64.bat"
 RUN powershell Set-Content 'build.bat' -value 'call %VS_DEVCMD_BAT%',(Get-Content 'build.bat')
-RUN build.bat --cmake_generator "Visual Studio 17 2022" --config Release --cmake_extra_defines "CMAKE_CUDA_ARCHITECTURES=60;61;70;75;80;86;90" --skip_submodule_sync --parallel --build_shared_lib --compile_no_warning_as_error --skip_tests --update --build --build_dir /workspace/build {}
+RUN build.bat --cmake_generator "Visual Studio 17 2022" --config Release --cmake_extra_defines "CMAKE_CUDA_ARCHITECTURES=75;80;86" --skip_submodule_sync --parallel --build_shared_lib --compile_no_warning_as_error --skip_tests --update --build --build_dir /workspace/build {}
 """.format(
         ep_flags
     )
