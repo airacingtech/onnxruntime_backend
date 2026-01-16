@@ -295,13 +295,13 @@ RUN git clone -b rel-${ONNXRUNTIME_VERSION} --recursive ${ONNXRUNTIME_REPO} onnx
     df += """
 WORKDIR /workspace/onnxruntime
 ARG COMMON_BUILD_ARGS="--config ${{ONNXRUNTIME_BUILD_CONFIG}} --skip_submodule_sync --parallel --build_shared_lib \
-    --build_dir /workspace/build --cmake_extra_defines CMAKE_CUDA_ARCHITECTURES={} CMAKE_CUDA_FLAGS_INIT= onnxruntime_CUDA_CFLAGS= onnxruntime_CUDA_NVCC_FLAGS= onnxruntime_USE_PREINSTALLED_EIGEN=ON Eigen3_DIR=/usr/lib/cmake/eigen3"
+    --build_dir /workspace/build --cmake_extra_defines \"CMAKE_CUDA_ARCHITECTURES={}\" \"CMAKE_CUDA_FLAGS=--compiler-options=-Wno-strict-aliasing\" \"CMAKE_CUDA_FLAGS_INIT=\" \"onnxruntime_CUDA_CFLAGS=\" \"onnxruntime_CUDA_NVCC_FLAGS=--compiler-options=-Wno-strict-aliasing\" \"onnxruntime_USE_PREINSTALLED_EIGEN=ON\" \"eigen_SOURCE_PATH=/usr/include/eigen3\" \"Eigen3_DIR=/usr/lib/cmake/eigen3\""
 """.format(
         cuda_archs
     )
 
     df += """
-RUN ./build.sh ${{COMMON_BUILD_ARGS}} --update --build {}
+RUN ./build.sh ${{COMMON_BUILD_ARGS}} --update --build {} || (echo 'ONNXRUNTIME CMakeError.log:' && cat /workspace/build/${{ONNXRUNTIME_BUILD_CONFIG}}/CMakeFiles/CMakeError.log && exit 1)
 """.format(
         ep_flags
     )
