@@ -308,12 +308,11 @@ RUN git clone -b rel-${ONNXRUNTIME_VERSION} --recursive ${ONNXRUNTIME_REPO} onnx
     RUN ./build.sh ${{COMMON_BUILD_ARGS}} \
     --cmake_extra_defines onnxruntime_DISABLE_WERROR=ON \
     --cmake_extra_defines "CMAKE_CUDA_ARCHITECTURES=75;80;86" \
+    --cmake_extra_defines "TENSORRT_INCLUDE_DIR=/usr/include/x86_64-linux-gnu" \
     --update --build \
     --use_cuda \
     --use_tensorrt \
-    --cuda_home /usr/local/cuda \
-    --cudnn_home /usr/lib/x86_64-linux-gnu \
-    --tensorrt_home /usr \
+    --tensorrt_home /usr/lib/x86_64-linux-gnu \
     --allow_running_as_root
     """.format(
         ep_flags
@@ -595,7 +594,7 @@ def preprocess_gpu_flags():
             print("error: linux build requires --cudnn-home and --cuda-home")
 
         if FLAGS.tensorrt_home is None:
-            FLAGS.tensorrt_home = "/usr"
+            FLAGS.tensorrt_home = "/usr/lib/x86_64-linux-gnu"
 
 
 if __name__ == "__main__":
