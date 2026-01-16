@@ -161,14 +161,16 @@ RUN apt update -q=2 \\
         df += """
 # Allow configure to pick up cuDNN where it expects it.
 # (Note: $CUDNN_VERSION is defined by base image)
-RUN _CUDNN_VERSION=$(echo $CUDNN_VERSION | cut -d. -f1-2) && \
-    mkdir -p /usr/local/cudnn-$_CUDNN_VERSION/cuda/include && \
-    ln -s /usr/include/cudnn.h /usr/local/cudnn-$_CUDNN_VERSION/cuda/include/cudnn.h && \
-    mkdir -p /usr/local/cudnn-$_CUDNN_VERSION/cuda/lib64 && \
-    ln -s /etc/alternatives/libcudnn_so /usr/local/cudnn-$_CUDNN_VERSION/cuda/lib64/libcudnn.so && \
-    echo "export CUDNN_HOME=/usr/local/cudnn-$_CUDNN_VERSION/cuda" >> /etc/profile.d/cudnn.sh
+# Allow configure to pick up cuDNN where it expects it.
+# (Note: $CUDNN_VERSION is defined by base image)
+RUN CUDNN_SHORT_VERSION=$(echo $CUDNN_VERSION | cut -d. -f1-2) && \
+    mkdir -p /usr/local/cudnn-$CUDNN_SHORT_VERSION/cuda/include && \
+    ln -s /usr/include/cudnn.h /usr/local/cudnn-$CUDNN_SHORT_VERSION/cuda/include/cudnn.h && \
+    mkdir -p /usr/local/cudnn-$CUDNN_SHORT_VERSION/cuda/lib64 && \
+    ln -s /etc/alternatives/libcudnn_so /usr/local/cudnn-$CUDNN_SHORT_VERSION/cuda/lib64/libcudnn.so && \
+    echo "CUDNN_HOME=/usr/local/cudnn-$CUDNN_SHORT_VERSION/cuda" >> /etc/environment
 
-ENV CUDNN_HOME=/usr/local/cudnn-$(echo $CUDNN_VERSION | cut -d. -f1-2)/cuda
+ENV CUDNN_HOME=/usr/local/cudnn
 """
 
     if FLAGS.ort_openvino is not None:
