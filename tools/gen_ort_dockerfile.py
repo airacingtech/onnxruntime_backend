@@ -305,7 +305,7 @@ RUN git clone -b rel-${ONNXRUNTIME_VERSION} --recursive ${ONNXRUNTIME_REPO} onnx
     )
 
     df += """
-    RUN ./build.sh ${COMMON_BUILD_ARGS} \
+    RUN ./build.sh ${{COMMON_BUILD_ARGS}} \
     --cmake_extra_defines onnxruntime_DISABLE_WERROR=ON \
     --cmake_extra_defines CMAKE_CUDA_ARCHITECTURES=75;80;86 \
     --update --build \
