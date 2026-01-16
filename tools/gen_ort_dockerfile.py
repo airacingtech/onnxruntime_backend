@@ -138,7 +138,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         curl \
         libcurl4-openssl-dev \
         libssl-dev \
-        libeigen3-dev \
         patchelf \
         python3-dev \
         python3-pip \
@@ -162,13 +161,14 @@ RUN apt update -q=2 \\
         df += """
 # Allow configure to pick up cuDNN where it expects it.
 # (Note: $CUDNN_VERSION is defined by base image)
-RUN mkdir -p /usr/local/cudnn-$CUDNN_VERSION/cuda/include && \
-    ln -s /usr/include/cudnn.h /usr/local/cudnn-$CUDNN_VERSION/cuda/include/cudnn.h && \
-    mkdir -p /usr/local/cudnn-$CUDNN_VERSION/cuda/lib64 && \
-    ln -s /etc/alternatives/libcudnn_so /usr/local/cudnn-$CUDNN_VERSION/cuda/lib64/libcudnn.so && \
-    echo "export CUDNN_HOME=/usr/local/cudnn-$CUDNN_VERSION/cuda" >> /etc/profile.d/cudnn.sh
+RUN _CUDNN_VERSION=$(echo $CUDNN_VERSION | cut -d. -f1-2) && \
+    mkdir -p /usr/local/cudnn-$_CUDNN_VERSION/cuda/include && \
+    ln -s /usr/include/cudnn.h /usr/local/cudnn-$_CUDNN_VERSION/cuda/include/cudnn.h && \
+    mkdir -p /usr/local/cudnn-$_CUDNN_VERSION/cuda/lib64 && \
+    ln -s /etc/alternatives/libcudnn_so /usr/local/cudnn-$_CUDNN_VERSION/cuda/lib64/libcudnn.so && \
+    echo "export CUDNN_HOME=/usr/local/cudnn-$_CUDNN_VERSION/cuda" >> /etc/profile.d/cudnn.sh
 
-ENV CUDNN_HOME=/usr/local/cudnn-$CUDNN_VERSION/cuda
+ENV CUDNN_HOME=/usr/local/cudnn-$(echo $CUDNN_VERSION | cut -d. -f1-2)/cuda
 """
 
     if FLAGS.ort_openvino is not None:
@@ -275,10 +275,9 @@ RUN git clone -b rel-${ONNXRUNTIME_VERSION} --recursive ${ONNXRUNTIME_REPO} onnx
             if FLAGS.tensorrt_home is not None:
                 ep_flags += ' --tensorrt_home "{}"'.format(FLAGS.tensorrt_home)
 
-
-    # Always add --allow_running_as_root for Docker builds
-    if '--allow_running_as_root' not in ep_flags:
-        ep_flags += ' --allow_running_as_root'
+    if os.name == "posix":
+        if os.getuid() == 0:
+            ep_flags += " --allow_running_as_root"
 
     if FLAGS.ort_openvino is not None:
         ep_flags += " --use_openvino CPU"
@@ -291,30 +290,17 @@ RUN git clone -b rel-${ONNXRUNTIME_VERSION} --recursive ${ONNXRUNTIME_REPO} onnx
     else:
         cuda_archs = "60;61;70;75;80;86;90"
 
-    df += """WORKDIR /workspace/onnxruntime
-    ARG COMMON_BUILD_ARGS="\
-    --config ${{ONNXRUNTIME_BUILD_CONFIG}} \
-    --skip_submodule_sync \
-    --parallel \
-    --build_shared_lib \
-    --build_dir /workspace/build \
-    --cmake_extra_defines onnxruntime_USE_PREINSTALLED_EIGEN=ON \
-    --cmake_extra_defines eigen_path=/usr/include/eigen3"
-    """.format(
+    df += """
+WORKDIR /workspace/onnxruntime
+ARG COMMON_BUILD_ARGS="--config ${{ONNXRUNTIME_BUILD_CONFIG}} --skip_submodule_sync --parallel --build_shared_lib \
+    --build_dir /workspace/build --cmake_extra_defines CMAKE_CUDA_ARCHITECTURES='{}' "
+""".format(
         cuda_archs
     )
 
     df += """
-    RUN ./build.sh ${{COMMON_BUILD_ARGS}} \
-    --cmake_extra_defines onnxruntime_DISABLE_WERROR=ON \
-    --cmake_extra_defines "CMAKE_CUDA_ARCHITECTURES=75;80;86" \
-    --cmake_extra_defines "TENSORRT_INCLUDE_DIR=/usr/include/x86_64-linux-gnu" \
-    --update --build \
-    --use_cuda \
-    --use_tensorrt \
-    --tensorrt_home /usr/lib/x86_64-linux-gnu \
-    --allow_running_as_root
-    """.format(
+RUN ./build.sh ${{COMMON_BUILD_ARGS}} --update --build {}
+""".format(
         ep_flags
     )
 
@@ -499,7 +485,7 @@ RUN git clone -b rel-%ONNXRUNTIME_VERSION% --recursive %ONNXRUNTIME_REPO% onnxru
 WORKDIR /workspace/onnxruntime
 ARG VS_DEVCMD_BAT="\BuildTools\VC\Auxiliary\Build\vcvars64.bat"
 RUN powershell Set-Content 'build.bat' -value 'call %VS_DEVCMD_BAT%',(Get-Content 'build.bat')
-RUN build.bat --cmake_generator "Visual Studio 17 2022" --config Release --cmake_extra_defines "CMAKE_CUDA_ARCHITECTURES=75;80;86" --skip_submodule_sync --parallel --build_shared_lib --compile_no_warning_as_error --skip_tests --update --build --build_dir /workspace/build {}
+RUN build.bat --cmake_generator "Visual Studio 17 2022" --config Release --cmake_extra_defines "CMAKE_CUDA_ARCHITECTURES=60;61;70;75;80;86;90" --skip_submodule_sync --parallel --build_shared_lib --compile_no_warning_as_error --skip_tests --update --build --build_dir /workspace/build {}
 """.format(
         ep_flags
     )
@@ -594,7 +580,7 @@ def preprocess_gpu_flags():
             print("error: linux build requires --cudnn-home and --cuda-home")
 
         if FLAGS.tensorrt_home is None:
-            FLAGS.tensorrt_home = "/usr/lib/x86_64-linux-gnu"
+            FLAGS.tensorrt_home = "/usr/src/tensorrt"
 
 
 if __name__ == "__main__":
